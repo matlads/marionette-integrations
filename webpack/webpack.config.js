@@ -1,73 +1,64 @@
-'use strict';
+import path from "path";
+import webpack from "webpack";
+const __dirname = import.meta.dirname;
+import HtmlWebpackPlugin from "html-webpack-plugin";
 
-const webpack = require('webpack');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const path = require('path');
-const merge = require('webpack-merge');
-
-const webpackCommon = {
+export default {
+  mode: "development",
   entry: {
-    app: ['./app/initialize']
+    app: {
+      import: "./app/initialize.js",
+      dependOn: ["underscore", "jquery", "backbone", "marionette"],
+    },
+    underscore: "underscore",
+    jquery: "jquery",
+    backbone: "backbone",
+    marionette: "backbone.marionette",
+  },
+  devtool: "inline-source-map",
+  devServer: {
+    static: "./public",
   },
   module: {
-    loaders: [
+    rules: [
       {
-        test: /\.js?$/,
-        exclude: /node_modules/,
-        loader: 'babel',
-        query: {
-          presets: ['es2015']
-        }
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
       },
       {
         test: /\.jst$/,
-        loader: 'underscore-template-loader'
+        loader: "underscore-template-loader",
       },
-      {
-        test: /\.css$/,
-        exclude: /node_modules/,
-        loader: ExtractTextPlugin.extract('style-loader', 'css-loader')
-      }
-    ]
-  },
-  output: {
-    filename: 'app.js',
-    path: path.join(__dirname, './public'),
-    publicPath: '/'
+    ],
   },
   plugins: [
-    new ExtractTextPlugin('app.css'),
-    new CopyWebpackPlugin([{
-      from: './app/assets/index.html',
-      to: './index.html'
-    }]),
     new webpack.ProvidePlugin({
-      $: 'jquery',
-      _: 'underscore'
-    })
+      $: "jquery",
+      _: "underscore",
+    }),
+    new HtmlWebpackPlugin({
+      title: "Webpack with MarionetteJS",
+      meta: {
+        viewport:
+          "user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi",
+      },
+    }),
   ],
   resolve: {
-    root: path.join(__dirname, './app')
+    alias: {
+      components: path.resolve(__dirname, "app/components/"),
+    },
   },
-  resolveLoader: {
-    root: path.join(__dirname, './node_modules')
-  }
+  output: {
+    filename: "[name].js",
+    path: path.resolve(__dirname, "public"),
+    clean: true,
+    publicPath: "/",
+  },
+  optimization: {
+    runtimeChunk: "single",
+    splitChunks: {
+      chunks: "all",
+    },
+  },
 };
-
-switch (process.env.npm_lifecycle_event) {
-  case 'start':
-  case 'dev':
-    module.exports = merge(webpackCommon, {
-      devtool: '#inline-source-map',
-      devServer: {
-        inline: true
-      }
-    });
-    break;
-  default:
-    module.exports = merge(webpackCommon, {
-      devtool: 'source-map'
-    });
-    break;
-}
